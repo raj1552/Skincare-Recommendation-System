@@ -1,0 +1,33 @@
+# Go
+/backend/go.sum
+/backend/bin/
+backend/build/
+
+# Node / React / Next.js
+/frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env files
+.env
+.env.*
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
