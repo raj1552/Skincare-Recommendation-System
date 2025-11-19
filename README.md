@@ -50,7 +50,7 @@ cd Skincare-Recommendation-System
 Place the file inside the `python/` folder:
 
 - **File:** `vit_skin_type_224.pth`
-- **Download Link:** [Google Drive](#) *(add your actual link)*
+- **Download Link:** [https://drive.google.com/file/d/1IslymAf2VCIEM3z7d7ETmSWBNqtHIJmq/view?usp=sharing]
 - **Final path:** `python/vit_skin_type_224.pth`
 
 ### 2. Environment Variables
