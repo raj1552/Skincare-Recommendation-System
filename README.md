@@ -21,15 +21,14 @@ A full-stack application with a Next.js frontend, Go backend, and a fine-tuned V
 ---
 
 ## Project Structure
-|──| backend/ → Go server
-|  |__ .env
-├── frontend/ → Next.js app
-|  |__ .env
-├── python/ → Python model & scripts
-│ ├── vit_skin_type_224.pth
-│ ├── predict.py
-│ └── venv/
-└── README.md
+backend/ → Go server
+├── .env
+frontend/ → Next.js app
+├── .env
+python/ → Python model & scripts
+├── vit_skin_type_224.pth
+├── predict.py
+└── venv/
 
 
 ## Repository Setup
