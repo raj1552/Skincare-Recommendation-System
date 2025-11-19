@@ -2,7 +2,7 @@
 **AI-Powered Skin Type Detection using Vision Transformer (ViT)**  
 
 Upload a selfie → Get instant skin type prediction:  
-**Normal • Combination • Dry • Normal • Oily • Sensitive**
+**Combination • Dry • Normal • Oily • Sensitive**
 
 A full-stack application with a Next.js frontend, Go backend, and a fine-tuned Vision Transformer model for skin type prediction.
 
