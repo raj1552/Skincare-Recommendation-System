@@ -40,10 +40,10 @@ export function DashboardHeader() {
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2">
+              <Button variant="ghost" className="flex items-center gap-2 cursor-pointer">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <span className="text-sm font-medium">
-                    {/* {user?.name.charAt(0).toUpperCase()}\ */}
+                    {user?.name ? user?.name.charAt(0).toUpperCase(): "U"}
                     </span>
                 </div>
               </Button>

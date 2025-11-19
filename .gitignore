@@ -20,6 +20,9 @@ pnpm-debug.log*
 .env
 .env.*
 
+python/venv/
+python/vit_skin_type_224.pth
+
 # IDEs and OS
 .vscode/
 .idea/
@@ -31,3 +34,6 @@ pnpm-debug.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+.gitignore
+python/bes_model.pth

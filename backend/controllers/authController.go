@@ -63,23 +63,23 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	var emailFound models.User
-	initializers.DB.Where("email=?", loginInput.Email).Find(&emailFound)
+	var user models.User
+	initializers.DB.Where("email=?", loginInput.Email).Find(&user)
 
-	if emailFound.ID == 0 {
+	if user.ID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User not found"})
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(emailFound.Password), []byte(loginInput.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginInput.Password)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid password"})
 		return
 	}
 
 	generateToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":    emailFound.ID,
-		"name":  emailFound.Username,
-		"email": emailFound.Email,
+		"id":    user.ID,
+		"name":  user.Username,
+		"email": user.Email,
 		"exp":   time.Now().Add(time.Hour * 24).Unix(),
 	})
 
@@ -90,6 +90,9 @@ func Login(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
+		"id":    user.ID,
+		"name":  user.Username,
+		"email": user.Email,
 		"token": token,
 	})
 }

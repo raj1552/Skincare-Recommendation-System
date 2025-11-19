@@ -1,29 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import Cookies from "js-cookie";
-import {jwtDecode} from "jwt-decode";
 import { useRouter } from "next/navigation";
-
-interface User {
-  id?: string;
-  name?: string;
-  email: string;
-}
-
-interface TokenPayload {
-  id?: string;
-  name?: string;
-  email?: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => void;
-  isLoading: boolean;
-}
+import type { User, AuthContextType } from "@/types/auth"; 
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -32,18 +11,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // On mount, check for existing token
   useEffect(() => {
-    const token = Cookies.get("token");
-    if (token) {
-      const decoded: TokenPayload = jwtDecode(token);
-      setUser({ name: decoded.name || "", email: decoded.email || "" });
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
     }
-
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
+    if (!email || !password) {
+      throw new Error(
+        `${
+          !email ? "Email" : !password ? "Password" : "Email and Password"
+        } is Required`
+      );
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch(
@@ -58,9 +42,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!response.ok) throw new Error("Invalid email or password");
 
       const data = await response.json();
-      Cookies.set("token", data.token, { expires: 7 });
-      setUser(data.user || { email });
-      router.push("/dashboard");
+      localStorage.setItem("user", JSON.stringify(data));
+
+      setUser({
+        id: data.id,
+        name: data.name,
+        email: data.email,
+      });
+
+      router.replace("/dashboard");
     } catch (error) {
       console.error("Login failed:", error);
       throw error;
@@ -70,6 +60,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signup = async (email: string, password: string, name: string) => {
+    if (!email || !password || !name) {
+      const missing = [
+        !email && "Email",
+        !password && "Password",
+        !name && "Name",
+      ].filter(Boolean);
+
+      throw new Error(
+        `${missing.join(" and ")} ${
+          missing.length > 1 ? "are" : "is"
+        } required`
+      );
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch(
@@ -83,10 +87,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (!response.ok) throw new Error("Signup failed");
 
-      const data = await response.json();
-      Cookies.set("token", data.token, { expires: 7 });
-      setUser(data.user || { email, name });
-      router.push("/dashboard");
+      router.push("/login");
     } catch (error) {
       console.error("Signup failed:", error);
       throw error;
@@ -96,9 +97,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = () => {
-    Cookies.remove("token");
+    localStorage.removeItem("user");
     setUser(null);
-    router.push("/login");
+    router.replace("/login");
   };
 
   return (

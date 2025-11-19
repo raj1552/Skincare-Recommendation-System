@@ -1,8 +1,8 @@
 package main
 
 import (
-    "gin-quickstart/initializers"
-    "gin-quickstart/models"
+	"gin-quickstart/initializers"
+	"gin-quickstart/models"
 )
 
 func init() {
@@ -12,6 +12,5 @@ func init() {
 }
 
 func main() {
-	
-     initializers.DB.AutoMigrate(&models.User{})
+	initializers.DB.AutoMigrate(&models.User{}, &models.Prediction{})
 }
