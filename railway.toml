@@ -1,0 +1,53 @@
+# railway.toml → put this in the root of your repo
+
+[build]
+  builder = "nixpacks"
+
+# ==================== 1. Go Backend ====================
+[[services]]
+  name = "skincare-backend"
+  root = "backend"
+  startCommand = "go run main.go"      
+  port = 8000
+
+  [services.env]
+    PORT = "8000"
+    DB_URL = "${{Postgres.DATABASE_URL}}" 
+    SECRET = "auth-api-jwt-secret"
+    PYTHON_API_URL = "http://skincare-inference.railway.internal:8000/predict"  
+
+  [[services.health]]
+    path = "/"   # or "/health" if you have one
+
+# ==================== 2. Python Inference (ViT model) ====================
+[[services]]
+  name = "skincare-inference"
+  root = "python"
+  startCommand = "uvicorn predict:app --host 0.0.0.0 --port 8080"
+  port = 8080
+
+  [services.env]
+    PORT = "8080"
+
+  # This is where you upload your 375 MB .pth file after deploy
+  [[services.volumes]]
+    mountPath = "/app"
+
+  [[services.health]]
+    path = "/"
+
+# ==================== 3. Next.js Frontend (optional) ====================
+# If you want to deploy frontend also on Railway (recommended)
+[[services]]
+  name = "skincare-frontend"
+  root = "frontend"
+  buildCommand = "npm run build"
+  startCommand = "npm start"
+  port = 3000
+
+  [services.env]
+    PORT = "3000"
+    NEXT_PUBLIC_API_URL = "https://skincare-backend.up.railway.app"   
+
+  [[services.health]]
+    path = "/"

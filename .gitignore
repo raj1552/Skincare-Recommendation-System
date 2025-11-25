@@ -20,8 +20,14 @@ pnpm-debug.log*
 .env
 .env.*
 
+# Python cache
+**/__pycache__/
+*.pyc
+
 python/venv/
 python/vit_skin_type_224.pth
+python/__pycache__/
+python/__pycache__/app.cpython-313.pyc
 
 # IDEs and OS
 .vscode/
