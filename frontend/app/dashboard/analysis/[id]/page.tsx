@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SkinAnalysis } from "@/lib/type";
 
 export default function AnalysisResultPage() {
   const params = useParams();
@@ -228,7 +229,7 @@ export default function AnalysisResultPage() {
           <CardHeader>
             <CardTitle>Skin Characteristics</CardTitle>
             <CardDescription>
-              Common traits of {analysis.skinType} skin
+              Common traits of {analysis.predicted_class} skin
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -260,7 +261,7 @@ export default function AnalysisResultPage() {
           <CardHeader>
             <CardTitle>Skincare Tips</CardTitle>
             <CardDescription>
-              Recommendations for {analysis.skinType} skin
+              Recommendations for {analysis.predicted_class} skin
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -281,7 +282,7 @@ export default function AnalysisResultPage() {
           <CardHeader>
             <CardTitle>Recommended Products</CardTitle>
             <CardDescription>
-              Curated for your {analysis.skinType} skin type
+              Curated for your {analysis.predicted_class} skin type
             </CardDescription>
           </CardHeader>
           <CardContent>

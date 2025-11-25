@@ -12,6 +12,7 @@ export interface SkinAnalysis {
   recommendations?: string[] // Optional array of recommendations
 }
 
+
 // ✅ API response for GET /analysis/:userId
 export interface AnalysisResponse {
   analyses: SkinAnalysis[]
