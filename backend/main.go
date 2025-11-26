@@ -34,7 +34,7 @@ func main() {
 
 	// CORS — your real frontend URL
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://skincare-recommendation-system-1.onrender.com"},
+		AllowOrigins:     []string{"https://skincare-recommendation-system-frontend.onrender.com"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
