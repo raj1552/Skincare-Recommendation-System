@@ -1,9 +1,9 @@
 # python/requirements.txt (Fixed for Render - Nov 2025)
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
-# PyTorch CPU-only (latest stable, from official CPU wheel index)
-torch==2.5.0 --index-url https://download.pytorch.org/whl/cpu
-torchvision==0.20.0 --index-url https://download.pytorch.org/whl/cpu
+# PyTorch CPU-only (latest stable, from official CPU wheel index - no version pin to auto-select stable)
+torch --index-url https://download.pytorch.org/whl/cpu
+torchvision --index-url https://download.pytorch.org/whl/cpu
 timm==1.0.9
 Pillow==10.4.0
 python-multipart==0.0.9
