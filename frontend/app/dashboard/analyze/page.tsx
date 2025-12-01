@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 
 export default function AnalyzePage() {
+  const url = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -68,7 +69,7 @@ export default function AnalyzePage() {
       formData.append("userId", storedUser.id.toString());
       formData.append("image", selectedImage);
 
-      const response = await fetch("http://localhost:3000/predict", {
+      const response = await fetch(url || '', {
         method: "POST",
         body: formData,
       });
