@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/card";
 
 export default function AnalyzePage() {
-  const url = process.env.NEXT_PUBLIC_API_URL;
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -69,16 +68,16 @@ export default function AnalyzePage() {
       formData.append("userId", storedUser.id.toString());
       formData.append("image", selectedImage);
 
-      const response = await fetch(url || '', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/predict`, {
         method: "POST",
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error("Analysis failed");
+        console.log(error)
       }
-
       const result = await response.json();
+      console.log("Prediction Result:", result);
 
       const skinType = result.predicted.predicted_class;
       const percentages = result.predicted.percentages;

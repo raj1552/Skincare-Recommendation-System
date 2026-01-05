@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/authContext";
 import type { SkinAnalysis, SkinType } from "@/lib/type";
 import { Button } from "@/components/ui/button";
-import { showToast} from "nextjs-toast-notify";
+import { showToast } from "nextjs-toast-notify";
 import {
   Card,
   CardContent,
@@ -29,7 +29,6 @@ export default function HistoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSkinType, setFilterSkinType] = useState<string>("all");
   const [loading, setLoading] = useState(true);
-
 
   // ✅ Fetch all analyses from backend
   useEffect(() => {
@@ -56,42 +55,60 @@ export default function HistoryPage() {
     fetchAnalyses();
   }, [user]);
 
+  const deleteAnalysis = async (analysisId: string) => {
+    if (!user) return;
 
-const deleteAnalysis = async (analysisId: string) => {
-  if (!user) return;
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
+      showToast.error("Session expired. Please login again.");
+      return;
+    }
 
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/analysis/${user.id}/${analysisId}`,
-      { method: "DELETE" }
-    );
+    const parsedUser = JSON.parse(storedUser);
+    const token = parsedUser.token;
 
-    if (!res.ok) throw new Error("Failed to delete analysis");
+    if (!token) {
+      showToast.error("Invalid session. Please login again.");
+      return;
+    }
 
-    setAnalyses((prev) => prev.filter((a) => a.predictedID !== analysisId));
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/analysis/${user.id}/${analysisId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    // Show success toast
-    showToast.success("Sucessfully Deleted", {
-      duration: 4000,
-      position: "top-right",
-      progress: true,
-      transition: "bounceIn",
-      icon: "",
-      sound: true,
-    });
-  } catch (err) {
-    console.error(err);
+      if (!res.ok) throw new Error("Failed to delete analysis");
 
-    showToast.error("Failed to Delete", {
-      duration: 4000,
-      position: "top-right",
-      progress: true,
-      transition: "bounceIn",
-      icon: "",
-      sound: true,
-    });
-  }
-};
+      setAnalyses((prev) => prev.filter((a) => a.predictedID !== analysisId));
+
+      // Show success toast
+      showToast.success("Sucessfully Deleted", {
+        duration: 4000,
+        position: "top-right",
+        progress: true,
+        transition: "bounceIn",
+        icon: "",
+        sound: true,
+      });
+    } catch (err) {
+      console.error(err);
+
+      showToast.error("Failed to Delete", {
+        duration: 4000,
+        position: "top-right",
+        progress: true,
+        transition: "bounceIn",
+        icon: "",
+        sound: true,
+      });
+    }
+  };
 
   // ✅ Apply search & filter logic
   useEffect(() => {
