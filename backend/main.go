@@ -49,8 +49,8 @@ func main() {
 	router.GET("/user/profile", middlewares.CheckAuth, controllers.GetUserProfile)
 	router.GET("/analysis/:userId", controllers.GetAnalyses)
 	// Use the same handler that already exists in your code
-	router.GET("/analysis/detail/:userId/:id", controllers.GetAnalyses) // ← already exists, reuse it
-	router.DELETE("/analysis/:userId/:id", middlewares.CheckAuth, controllers.DeleteAnalysis)
+	router.GET("/analysis/detail/:userId/:predictionID", controllers.GetAnalyses) // ← already exists, reuse it
+	router.DELETE("/analysis/:userId/:predictionID", middlewares.CheckAuth, controllers.DeleteAnalysis)
 
 	log.Println("Backend server starting...")
 	router.Run() // Render overrides port automatically

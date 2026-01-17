@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gin-quickstart/initializers"
 	"gin-quickstart/models"
+	"gin-quickstart/utils"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 func UploadHandler(c *gin.Context) {
@@ -31,60 +33,80 @@ func UploadHandler(c *gin.Context) {
 	}
 
 	// 2. Get uploaded file
-	file, err := c.FormFile("image")
+	fileHeader, err := c.FormFile("image")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No file received"})
 		return
 	}
 
-	// 3. Save file locally
-	uploadDir := "/home/raj/skincare-app/frontend/public/upload"
-	if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create uploads folder"})
+	file, err := fileHeader.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open file"})
+		return
+	}
+	defer file.Close()
+
+	// 3. Upload image to S3
+	ext := filepath.Ext(fileHeader.Filename)
+	imageUUID := uuid.New().String()
+	s3Key := fmt.Sprintf("images/%d/%s%s", id, imageUUID, ext)
+
+	imageURL, err := utils.UploadToS3(
+		file,
+		s3Key,
+		fileHeader.Header.Get("Content-Type"),
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image to S3"})
 		return
 	}
 
-	filePath := filepath.Join(uploadDir, file.Filename)
-	if err := c.SaveUploadedFile(file, filePath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+	// 4. Save image metadata in DB
+	image := models.Image{
+		UserID:   uint(id),
+		S3Key:    s3Key,
+		S3URL:    imageURL,
+		Bucket:   os.Getenv("AWS_S3_BUCKET"),
+		FileName: fileHeader.Filename,
+		FileSize: fileHeader.Size,
+		MimeType: fileHeader.Header.Get("Content-Type"),
+	}
+
+	if err := initializers.DB.Create(&image).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image record"})
 		return
 	}
 
-	// 4. Prepare multipart request for Python FastAPI
+	// 5. Prepare multipart request for Python FastAPI
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	part, err := writer.CreateFormFile("file", filepath.Base(filePath))
+
+	part, err := writer.CreateFormFile("file", fileHeader.Filename)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create multipart request (file)"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create multipart file"})
 		return
 	}
 
-	f, err := os.Open(filePath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open uploaded file"})
-		return
-	}
-	defer f.Close()
-	io.Copy(part, f)
+	// reopen file for FastAPI request
+	fileForML, _ := fileHeader.Open()
+	defer fileForML.Close()
+	io.Copy(part, fileForML)
 	writer.Close()
 
-	// 5. Get Python API URL from environment
+	// 6. Call Python API
 	pythonAPI := os.Getenv("PYTHON_API_URL")
 	if pythonAPI == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Python API URL not set in environment"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Python API URL not set"})
 		return
 	}
 
-	// 6. Send request to Python FastAPI
 	resp, err := http.Post(pythonAPI, writer.FormDataContentType(), body)
 	if err != nil {
-		os.Remove(filePath)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to connect to prediction API: %v", err)})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to connect to prediction API"})
 		return
 	}
 	defer resp.Body.Close()
 
-	// 7. Read Python response
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read prediction response"})
@@ -96,22 +118,26 @@ func UploadHandler(c *gin.Context) {
 		return
 	}
 
-	// 8. Parse JSON into Prediction struct
+	// 7. Parse prediction
 	var pred models.Prediction
 	if err := json.Unmarshal(respBody, &pred); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse prediction result"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse prediction"})
 		return
 	}
 
-	// 9. Save additional info
-	pred.ImagePath = file.Filename
-	pred.UserID = id
+	// 8. Attach user + image
+	pred.UserID = uint(id)
+	pred.ImageID = image.ID
 
-	initializers.DB.Create(&pred)
+	if err := initializers.DB.Create(&pred).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save prediction"})
+		return
+	}
 
-	// 10. Return result
+	// 9. Return response
 	c.JSON(http.StatusOK, gin.H{
-		"message":   "Prediction successful",
-		"predicted": pred,
+		"message":    "Prediction successful",
+		"prediction": pred,
+		"image":      image,
 	})
 }

@@ -3,8 +3,8 @@ package controllers
 import (
 	"gin-quickstart/initializers"
 	"gin-quickstart/models"
+	"gin-quickstart/utils"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -23,9 +23,8 @@ func GetAnalyses(c *gin.Context) {
 		return
 	}
 
-	predictionIdParam := c.Param("id")
+	predictionIdParam := c.Param("predictionID")
 
-	// If predictionId is provided, fetch specific prediction
 	if predictionIdParam != "" {
 		predictionId, err := strconv.ParseUint(predictionIdParam, 10, 64)
 		if err != nil {
@@ -34,8 +33,12 @@ func GetAnalyses(c *gin.Context) {
 		}
 
 		var prediction models.Prediction
-		result := initializers.DB.Where("user_id = ? AND predict_id = ?", userId, predictionId).First(&prediction)
-		if result.Error != nil {
+		err = initializers.DB.
+			Preload("Image").
+			Where("user_id = ? AND predict_id = ?", userId, predictionId).
+			First(&prediction).Error
+
+		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Analysis not found"})
 			return
 		}
@@ -44,10 +47,14 @@ func GetAnalyses(c *gin.Context) {
 		return
 	}
 
-	// If no predictionId, fetch all analyses for user
 	var predictions []models.Prediction
-	result := initializers.DB.Where("user_id = ?", userId).Find(&predictions)
-	if result.Error != nil {
+	err = initializers.DB.
+		Preload("Image").
+		Where("user_id = ?", userId).
+		Order("created_at desc").
+		Find(&predictions).Error
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch analyses"})
 		return
 	}
@@ -57,7 +64,7 @@ func GetAnalyses(c *gin.Context) {
 
 func DeleteAnalysis(c *gin.Context) {
 	userIdParam := c.Param("userId")
-	predictionIdParam := c.Param("id")
+	predictionIdParam := c.Param("predictionID")
 
 	if userIdParam == "" || predictionIdParam == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "UserID and Prediction ID are required"})
@@ -77,22 +84,28 @@ func DeleteAnalysis(c *gin.Context) {
 	}
 
 	var prediction models.Prediction
-	result := initializers.DB.Where("user_id = ? AND predict_id = ?", userId, predictionId).First(&prediction)
-	if result.Error != nil {
+	err = initializers.DB.
+		Preload("Image").
+		Where("user_id = ? AND predict_id = ?", userId, predictionId).
+		First(&prediction).Error
+
+	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Analysis not found"})
 		return
 	}
 
-	// Delete the image file if it exists
-	if prediction.ImagePath != "" {
-		err := os.Remove("/home/raj/skincare-app/frontend/public/upload/" + prediction.ImagePath)
-		if err != nil && !os.IsNotExist(err) {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete image file"})
+	// 1. Delete image from S3
+	if prediction.Image.ID != 0 {
+		if err := utils.DeleteFromS3(prediction.Image.S3Key); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete image from S3"})
 			return
 		}
+
+		// 2. Delete image record
+		initializers.DB.Delete(&prediction.Image)
 	}
 
-	// Delete the database record
+	// 3. Delete prediction
 	if err := initializers.DB.Delete(&prediction).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete analysis"})
 		return
